@@ -4,130 +4,163 @@ function(input, output, session) {
   
   ##########  PAGE VUE GLOBALE  ##########
   
-  ## Fonction réactive pour la sélection du périmètre choisi par l'utilisateur
-  perimetre_overview <- reactive({
+  ## Infobox sur le nombre moyen d'accidents par jour
+  output$accidents_par_jour <- renderInfoBox({
     
-    # Filtrage sur le(s) type(s) de gravité choisis par l'utilisateur
-    df_overview <- df %>% 
-      filter(Accident_Severity %in% input$severity) 
+    nb_accidents <- nrow(df)
     
-    return(df_overview)
+    nb_jours <- df %>%
+      mutate(Date = as.Date(Date)) %>%
+      distinct(Date) %>%
+      nrow()
     
-  })
-  
-  ## Titre de la page
-  output$titre_overview <- renderUI({
-    sousTitre <- if (length(input$severity) > 0 && length(input$severity) <= 2){
-      paste0(
-        "Accidents de gravité : ",
-        paste(input$severity, collapse = ", ")
-      )
-    } else {
-      NULL
-    }
-    
-    div(
-      style = "display: flex; align-items: center;",
-      img(
-        src = "accident_illustration.png",
-        height = "80px",
-        style = "margin-right: 15px;"
-      ),
-      div(
-        h3("Évolution du nombre d'accidents au Royaume-Uni entre 2021 et 2022",
-           class = "mb-0"),
-        if (!is.null(sousTitre)) {
-          h5(sousTitre, class = "mb-0")
-        }
-      )
-    )
-  })
-
-  ## Infobox sur le nombre total d'accidents
-  output$total_accidents <- renderInfoBox({
-    
-    df_overview <- perimetre_overview()
+    moyenne_jour <- nb_accidents / nb_jours
     
     infoBox(
-      title = "Accidentologie",
-      value = nrow(df_overview),
-      subtitle = "Accidents",
-      icon = icon("car-crash"),
-      color = "red",
+      title = span("En moyenne", style = "text-transform: none;"),
+      value = round(moyenne_jour, 1),
+      subtitle = "Accidents / jour",
+      icon = icon("calendar-day"),
+      color = "purple",
       fill = TRUE
     )
   })
   
-  ## Infobox sur le nombre médian de véhicules impliqués par accidents
-  output$vehicules_par_accident <- renderInfoBox({
-    
-    df_overview <- perimetre_overview()
-    
-    validate(
-      need(nrow(df_overview) > 0, "Aucune donnée")
-    )
-    
-    median_vehicules <- median(df_overview$Number_of_Vehicles, na.rm = TRUE)
-    
-    infoBox(
-      title = "Accidentologie (médiane)",
-      value = round(median_vehicules, 1),
-      subtitle = "Véhicule(s) impliqué(s) / accident",
-      icon = icon("car"),
-      color = "blue",
-      fill = TRUE
-    )
-  })
-  
-  ## Infobox sur le nombre médian de victimes par accident
-  output$victimes_par_accident <- renderInfoBox({
-    
-    df_overview <- perimetre_overview()
-    
-    validate(
-      need(nrow(df_overview) > 0, "Aucune donnée")
-    )
-    
-    median_victimes <- median(df_overview$Number_of_Casualties, na.rm = TRUE)
-    
-    infoBox(
-      title = "Victimologie (médiane)",
-      value = round(median_victimes, 1),
-      subtitle = "Victime(s) / accident",
-      icon = icon("user-injured"),
-      color = "orange",
-      fill = TRUE
-    )
-  })
-  
-  ## Graphique sur l'évolution du nombre d'accidents
+  ## Graphique d'évolution du nombre d'accidents (avec une courbe pour chaque type de gravité et une courbe Total)
   output$plot_overview <- renderPlotly({
     
+    df_plot <- df %>%
+      mutate(
+        Date = lubridate::floor_date(Date, "month")
+      ) %>%
+      group_by(Date, Severity_fr) %>%
+      summarise(valeur = n(), .groups = "drop") %>%
+      
+      # Ajout de la courbe Total
+      bind_rows(
+        df %>%
+          mutate(Date = lubridate::floor_date(Date, "month")) %>%
+          group_by(Date) %>%
+          summarise(
+            Severity_fr = "Total",
+            valeur = n(),
+            .groups = "drop"
+          )
+      )
+    
+    gg <- ggplot(
+      df_plot,
+      aes(
+        x = Date,
+        y = valeur,
+        color = Severity_fr,
+        group = Severity_fr,
+        text = paste0(
+          "Date : ", format(Date, "%b %Y"),
+          "<br>Gravité : ", Severity_fr,
+          "<br>Nombre d'accidents : ", valeur
+        )
+      )
+    ) +
+      geom_line(linewidth=1.1, alpha = 0.9) +
+      geom_point(show.legend = FALSE) +
+      scale_color_manual(
+        name = "Gravité", 
+        values = c(
+          "Légère" = "dodgerblue",
+          "Grave" = "#f39c12",
+          "Mortelle" = "#dd4b39",
+          "Total" = "black"
+        )
+      ) +
+      labs(x = "", y = "Nombre d'accidents") +
+      theme_minimal() +
+      theme(
+        legend.position = "bottom"
+      )
+    
+    ggplotly(gg, tooltip = "text")
+  })
+  
+  
+  ## Graphique sur l'évolution du nombre d'accidents selon le filtrage
+  output$plot_overview_detail <- renderPlotly({
+    
     # Regrouper par mois et année
-    df_overview <- perimetre_overview() %>%
+    df_overview <- df %>%
+      # Filtrage sur le(s) type(s) de gravité choisis par l'utilisateur
+      filter(Severity_fr %in% input$severity) %>%
       # Conserve l'année et le mois + met le jour au premier du mois
-      mutate(Date = lubridate::floor_date(Date, "month")) %>%
+      mutate(Date = floor_date(Date, "month")) %>%
       group_by(Date) %>%
-      summarise(valeur = n(), .groups = "drop")
+      summarise(valeur = n(), .groups = "drop") %>%
+      arrange(Date) %>%
+      mutate(
+        tooltip_text = paste0(
+          "Date : ", format(Date, "%b %Y"),
+          "<br>Nombre d'accidents : ", valeur
+        )
+      )
     
     validate(
       need(nrow(df_overview) > 0, "Veuillez sélectionner un type de gravité !")
     )
     
-    graphique_overview <- df_overview %>%
-      arrange(Date) %>%
-      ggplot(aes(x = Date, y = valeur)) +
+    graphique_overview <- ggplot(df_overview, aes(x = Date, y = valeur)) +
       geom_line(size = 1.2, color = "#dd4b39") +
-      geom_point(color = "#dd4b39") +
+      geom_point(aes(text=tooltip_text), color = "#dd4b39") +
       labs(
         x = "",
         y = "Nombre d'accidents"
       ) +
       theme_minimal()
     
-    ggplotly(graphique_overview)
+    ggplotly(graphique_overview, tooltip = "text")
+    
+  })
+  
+  
+  output$table_overview <- renderDataTable({
+    
+    # Table pivotée avec une colonne par gravité, une pour le total et une pour la date
+    df_table_overview <- df %>%
+      mutate(
+        Date = floor_date(Date, "month")
+      ) %>%
+      group_by(Date, Severity_fr) %>%
+      summarise(Accidents = n(), .groups = "drop") %>%
+      # Transformation au format large : une colonne par gravité
+      pivot_wider(
+        names_from = Severity_fr,
+        values_from = Accidents,
+        values_fill = 0  # remplit les NA par 0
+      ) %>%
+      # Calcul du total des accidents
+      mutate(Total_Accidents = rowSums(select(., -Date))) %>%
+      # Tri par Date
+      arrange(Date) %>%
+      # Colonne d'affichage de la date
+      mutate(Mois = format(Date, "%b %Y"))
+    
+    # Renommer les colonnes
+    df_table_overview <- df_table_overview %>%
+      rename(
+        `Accidents légers` = `Légère`,
+        `Accidents graves` = Grave,
+        `Accidents mortels` = Mortelle,
+        `Total Accidents` = Total_Accidents
+      )
+    
+    datatable(
+      df_table_overview %>%
+        select(Mois, `Accident léger`, `Accident grave`, `Accident mortel`, `Total Accidents`),
+      rownames = FALSE,
+      options = list(
+        scrollX = TRUE,
+        dom = 'p'
+      ),
+      class = "cell-border stripe hover order-column"
+    )
   })
   
 }  
-  
-  
