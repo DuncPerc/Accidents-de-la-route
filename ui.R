@@ -80,7 +80,15 @@ dashboardPage(
             width = 3
           ),
           # Infobox sur le nombre moyen d'accidents par jour
-          infoBoxOutput("accidents_par_jour", width=3),
+          infoBox(
+            title = span("En moyenne", style = "text-transform: none;"),
+            value = round(nrow(df) / n_distinct(as.Date(df$Date)), 1),
+            subtitle = "Accidents / jour",
+            icon = icon("calendar-day"),
+            color = "purple",
+            fill = TRUE,
+            width=3
+          ),
           # Infobox sur le nombre médian de véhicules impliqués par accidents
           infoBox(
             title = span("Médiane", style = "text-transform: none;"),
@@ -125,8 +133,8 @@ dashboardPage(
                 checkboxGroupInput(
                   "severity",
                   "Gravité :",
-                  choices = sort(unique(df$Severity_fr)),
-                  selected = sort(unique(df$Severity_fr))
+                  choices = c("Légère", "Grave", "Mortelle"),
+                  selected = c("Légère", "Grave", "Mortelle")
                 )
               ),
               box(
@@ -139,7 +147,7 @@ dashboardPage(
             "Données",
             box(
               width = 12,
-              DT::dataTableOutput("table_overview")
+              DTOutput("table_overview")
             )
           )
           

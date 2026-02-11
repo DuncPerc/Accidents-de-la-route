@@ -3,29 +3,7 @@ function(input, output, session) {
   
   
   ##########  PAGE VUE GLOBALE  ##########
-  
-  ## Infobox sur le nombre moyen d'accidents par jour
-  output$accidents_par_jour <- renderInfoBox({
-    
-    nb_accidents <- nrow(df)
-    
-    nb_jours <- df %>%
-      mutate(Date = as.Date(Date)) %>%
-      distinct(Date) %>%
-      nrow()
-    
-    moyenne_jour <- nb_accidents / nb_jours
-    
-    infoBox(
-      title = span("En moyenne", style = "text-transform: none;"),
-      value = round(moyenne_jour, 1),
-      subtitle = "Accidents / jour",
-      icon = icon("calendar-day"),
-      color = "purple",
-      fill = TRUE
-    )
-  })
-  
+
   ## Graphique d'évolution du nombre d'accidents (avec une courbe pour chaque type de gravité et une courbe Total)
   output$plot_overview <- renderPlotly({
     
@@ -120,7 +98,7 @@ function(input, output, session) {
   })
   
   
-  output$table_overview <- renderDataTable({
+  output$table_overview <- renderDT({
     
     # Table pivotée avec une colonne par gravité, une pour le total et une pour la date
     df_table_overview <- df %>%
@@ -153,7 +131,7 @@ function(input, output, session) {
     
     datatable(
       df_table_overview %>%
-        select(Mois, `Accident léger`, `Accident grave`, `Accident mortel`, `Total Accidents`),
+        select(Mois, `Accidents légers`, `Accidents graves`, `Accidents mortels`, `Total Accidents`),
       rownames = FALSE,
       options = list(
         scrollX = TRUE,
