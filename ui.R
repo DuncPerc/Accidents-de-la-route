@@ -41,9 +41,10 @@ dashboardPage(
                 tags$li(strong("Gravité et facteurs influents : "), "analyse la gravité des accidents en fonction de différents facteurs tels que le type de route, les conditions météorologiques, les conditions d’éclairage et l’état de la chaussée"),
                 tags$li(strong("Analyse temporelle : "), "montre la répartition des accidents dans le temps (selon le mois, le jour de la semaine et l’heure) afin de mettre en évidence les périodes à risque")
               ),
-              
-              
               br(),
+              p("La carte de chaleur ci-dessous présente la répartition géographique des accidents de la route au Royaume-Uni, permettant de visualiser les zones les plus à risque."),
+              leafletOutput("map_accueil"),
+              hr(style = "border-top: 1px solid grey;"),
               p(em("Application réalisée par Amadou Bocoum & Anya Levêque"))
       ),
       
@@ -85,7 +86,7 @@ dashboardPage(
             value = round(nrow(df) / n_distinct(as.Date(df$Date)), 1),
             subtitle = "Accidents / jour",
             icon = icon("calendar-day"),
-            color = "purple",
+            color = "red",
             fill = TRUE,
             width=3
           ),
@@ -95,7 +96,7 @@ dashboardPage(
             value = round(median(df$Number_of_Vehicles, na.rm = TRUE), 1),
             subtitle = "Véhicules impliqués / accident",
             icon = icon("car"),
-            color = "blue",
+            color = "orange",
             fill = TRUE,
             width = 3
           ),

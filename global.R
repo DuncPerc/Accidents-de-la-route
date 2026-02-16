@@ -7,7 +7,9 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(lubridate)
-library(DT) 
+library(DT)
+library(leaflet)
+library(leaflet.extras)
 
 # Importation du fichier des données
 df <- read_excel("Data/Road_Accident_Data.xlsx") %>%

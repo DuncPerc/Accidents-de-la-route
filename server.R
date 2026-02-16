@@ -2,6 +2,24 @@
 function(input, output, session) {
   
   
+  ##########  PAGE ACCUEIL ##########
+  
+  # Carte heatmap représentant la répartition géographique des accidents
+  output$map_accueil <- renderLeaflet({
+    
+    df_map <- df %>%
+      filter(!is.na(Latitude), !is.na(Longitude))
+    
+    leaflet(df_map) %>%
+      addTiles() %>%
+      addHeatmap(
+        lng = ~Longitude,
+        lat = ~Latitude,
+        blur = 20,
+        radius = 15
+      )
+  })
+  
   ##########  PAGE VUE GLOBALE  ##########
 
   ## Graphique d'évolution du nombre d'accidents (avec une courbe pour chaque type de gravité et une courbe Total)
