@@ -158,5 +158,107 @@ function(input, output, session) {
       class = "cell-border stripe hover order-column"
     )
   })
+
+  ##########  PAGE GRAVITÉ ET FACTEURS INFLUENTS ##########
   
+  ## Graphique analysant la gravité des accidents selon différents facteurs
+  ## (type de route, météo, éclairage, état de la chaussée, zone).
+  ## Le graphique affiche la proportion d'accidents légers, graves et mortels
+  ## pour chaque catégorie du facteur sélectionné par l'utilisateur.
+  
+  output$plot_factor_gravity <- renderPlotly({
+    
+    # Filtrage des données selon les niveaux de gravité sélectionnés
+    df_factor <- df %>%
+      filter(Severity_fr %in% input$severity_factor)
+    
+    # Variable dynamique correspondant au facteur choisi par l'utilisateur
+    var <- sym(input$factor_choice)
+    
+    # Agrégation du nombre d'accidents par facteur et niveau de gravité
+    df_plot <- df_factor %>%
+      group_by(!!var, Severity_fr) %>%
+      summarise(n = n(), .groups = "drop")
+    
+    # Construction du graphique montrant la proportion de chaque niveau de gravité
+    gg <- ggplot(
+      df_plot,
+      aes(x = !!var, y = n, fill = Severity_fr)
+    ) +
+      geom_col(position = "fill") +
+      scale_y_continuous(labels = scales::percent)+
+      labs(
+        x = "",
+        y = "Proportion d'accidents",
+        fill = "Gravité"
+      ) +
+      theme_minimal() +
+      coord_flip()
+    
+    ggplotly(gg)
+  })
+  
+  ##########  PAGE ANALYSE TEMPORELLE ##########
+  
+  ## Fonction réactive permettant de choisir la mesure analysée :
+  ## soit le nombre d'accidents, soit le nombre total de victimes.
+  metric_fun <- reactive({
+    if(input$temporal_metric == "victims"){
+      function(d) sum(d$Number_of_Casualties, na.rm=TRUE)
+    } else {
+      function(d) nrow(d)
+    }
+  })
+  
+  
+  ## Graphique montrant la répartition des accidents (ou des victimes)
+  ## selon les mois de l'année afin d'identifier une éventuelle saisonnalité.
+  output$plot_month <- renderPlotly({
+    
+    df_month <- df %>%
+      mutate(month = month(Date, label=TRUE)) %>%
+      group_by(month) %>%
+      summarise(value = metric_fun()(cur_data()), .groups="drop")
+    
+    gg<-ggplot(df_month, aes(month, value)) +
+      geom_col(fill="#dd4b39") +
+      theme_minimal() 
+    
+    ggplotly(gg)
+  })
+  
+  
+  ## Graphique représentant la répartition des accidents (ou des victimes)
+  ## selon les jours de la semaine afin d'identifier les jours les plus à risque.
+  output$plot_weekday <- renderPlotly({
+    
+    df_day <- df %>%
+      mutate(day = wday(Date, label=TRUE, week_start = 1)) %>%
+      group_by(day) %>%
+      summarise(value = metric_fun()(cur_data()), .groups="drop")
+    
+    gg<-ggplot(df_day, aes(day, value)) +
+      geom_col(fill="#f39c12") +
+      theme_minimal() 
+    
+    ggplotly(gg)
+  })
+  
+  
+  ## Graphique montrant la distribution des accidents (ou des victimes)
+  ## selon l'heure de la journée afin d'identifier les périodes horaires
+  ## les plus accidentogènes.
+  output$plot_hour <- renderPlotly({
+    
+    df_hour <- df %>%
+      mutate(hour = hour(Time)) %>%
+      group_by(hour) %>%
+      summarise(value = metric_fun()(cur_data()), .groups="drop")
+    
+    gg<-ggplot(df_hour, aes(hour, value)) +
+      geom_col(fill="dodgerblue") +
+      theme_minimal()
+    
+    ggplotly(gg)
+  })
 }  
