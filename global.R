@@ -7,6 +7,7 @@ library(lubridate)
 library(DT)
 library(leaflet)
 library(leaflet.extras)
+library(rlang)
 
 # Importation du fichier des données
 df <- read_excel("Data/Road_Accident_Data.xlsx") %>%
