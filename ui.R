@@ -157,12 +157,78 @@ dashboardPage(
       
       
       # Page Gravité et facteurs influents
-      tabItem(tabName = "influential_factors"),
+      tabItem(
+        tabName = "influential_factors",
+        
+        fluidRow(
+          
+          box(
+            width = 3,
+            title = "Filtres",
+            status = "danger",
+            solidHeader = TRUE,
+            
+            checkboxGroupInput(
+              "severity_factor",
+              "Gravité :",
+              choices = c("Légère","Grave","Mortelle"),
+              selected = c("Légère","Grave","Mortelle")
+            ),
+            
+            selectInput(
+              "factor_choice",
+              "Facteur étudié :",
+              choices = c(
+                "Type de route" = "Road_Type",
+                "Météo" = "Weather_Conditions",
+                "Éclairage" = "Light_Conditions",
+                "Etat chaussée" = "Road_Surface_Conditions",
+                "Zone" = "Urban_or_Rural_Area",
+                "Limitation vitesse" = "Speed_limit"
+              )
+            )
+          ),
+          
+          box(
+            width = 9,
+            plotlyOutput("plot_factor_gravity")
+          )
+        )
+      ),
+
       
       # Page Analyse temporelle
-      tabItem(tabName = "temporal_analysis")
-      
+      tabItem(
+        tabName = "temporal_analysis",
+        
+        fluidRow(
+          
+          box(
+            width = 3,
+            title = "Indicateur",
+            status = "danger",
+            solidHeader = TRUE,
+            
+            selectInput(
+              "temporal_metric",
+              "Mesure :",
+              choices = c(
+                "Nombre d'accidents" = "accidents",
+                "Nombre de victimes" = "victims"
+              )
+            )
+          ),
+          
+          box(width = 9, plotlyOutput("plot_month"))
+        ),
+        
+        fluidRow(
+          box(width = 6, plotlyOutput("plot_weekday")),
+          box(width = 6, plotlyOutput("plot_hour"))
+        )
+      )
       
     )
   )
+  
 )
