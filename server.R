@@ -1,3 +1,13 @@
+#
+# This is the server logic of a Shiny web application. You can run the
+# application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    https://shiny.posit.co/
+#
+library(shinydashboard)
+library(shiny)
 
 function(input, output, session) {
   
@@ -21,7 +31,7 @@ function(input, output, session) {
   })
   
   ##########  PAGE VUE GLOBALE  ##########
-
+  
   ## Graphique d'évolution du nombre d'accidents (avec une courbe pour chaque type de gravité et une courbe Total)
   output$plot_overview <- renderPlotly({
     
@@ -158,6 +168,7 @@ function(input, output, session) {
       class = "cell-border stripe hover order-column"
     )
   })
+  
 
   ##########  PAGE GRAVITÉ ET FACTEURS INFLUENTS ##########
   
@@ -166,28 +177,87 @@ function(input, output, session) {
   ## Le graphique affiche la proportion d'accidents légers, graves et mortels
   ## pour chaque catégorie du facteur sélectionné par l'utilisateur.
   
+  ##########  PAGE GRAVITÉ ET FACTEURS INFLUENTS ##########
+  
   output$plot_factor_gravity <- renderPlotly({
     
-    # Filtrage des données selon les niveaux de gravité sélectionnés
-    df_factor <- df %>%
-      filter(Severity_fr %in% input$severity_factor)
+    # Facteurs les plus accidentogenes ******************************************************
+    output$danger_road <- renderValueBox({
+      
+      road <- df %>%
+        group_by(Road_Type) %>%
+        summarise(n = n(), .groups = "drop") %>%
+        slice_max(n, n = 1)
+      
+      valueBox(
+        road$Road_Type,
+        "Type de route le plus accidentogène",
+        icon = icon("road"),
+        color = "red"
+      )
+      
+    })
     
-    # Variable dynamique correspondant au facteur choisi par l'utilisateur
+    output$danger_weather <- renderValueBox({
+      
+      weather <- df %>%
+        filter(Severity_fr %in% c("Grave","Mortelle")) %>%
+        group_by(Weather_Conditions) %>%
+        summarise(n = n(), .groups = "drop") %>%
+        filter(Weather_Conditions != "Unknown") %>%
+        slice_max(n, n = 1)
+      
+      valueBox(
+        weather$Weather_Conditions,
+        "Météo la plus associée aux accidents graves",
+        icon = icon("cloud-rain"),
+        color = "purple"
+      )
+      
+    })
+    
+    output$danger_zone <- renderValueBox({
+      
+      zone <- df %>%
+        group_by(Urban_or_Rural_Area) %>%
+        summarise(n = n(), .groups = "drop") %>%
+        slice_max(n, n = 1)
+      
+      valueBox(
+        zone$Urban_or_Rural_Area,
+        "Zone la plus accidentogène",
+        icon = icon("city"),
+        color = "orange"
+      )
+      
+    })
+    
+   
+    
+    # ***************************************************************************************
+    
+    # Filtrage selon gravité et suppression des Unknown
+    df_factor <- df %>%
+      filter(Severity_fr %in% input$severity_factor) %>%
+      filter(.data[[input$factor_choice]] != "Unknown")
+    
     var <- sym(input$factor_choice)
     
-    # Agrégation du nombre d'accidents par facteur et niveau de gravité
     df_plot <- df_factor %>%
       group_by(!!var, Severity_fr) %>%
       summarise(n = n(), .groups = "drop")
     
-    # Construction du graphique montrant la proportion de chaque niveau de gravité
+    # titre dynamique
+    titre <- paste("Gravité des accidents selon :", input$factor_choice)
+    
     gg <- ggplot(
       df_plot,
       aes(x = !!var, y = n, fill = Severity_fr)
     ) +
       geom_col(position = "fill") +
-      scale_y_continuous(labels = scales::percent)+
+      scale_y_continuous(labels = scales::percent) +
       labs(
+        title = titre,
         x = "",
         y = "Proportion d'accidents",
         fill = "Gravité"
@@ -197,7 +267,6 @@ function(input, output, session) {
     
     ggplotly(gg)
   })
-  
   ##########  PAGE ANALYSE TEMPORELLE ##########
   
   ## Fonction réactive permettant de choisir la mesure analysée :
@@ -213,6 +282,29 @@ function(input, output, session) {
   
   ## Graphique montrant la répartition des accidents (ou des victimes)
   ## selon les mois de l'année afin d'identifier une éventuelle saisonnalité.
+  
+  #Le couple (jour, heure ) avec le plus d'accidents:******************************
+  peak_time <- df %>%
+    mutate(
+      day = wday(Date, label = TRUE, week_start = 1),
+      hour = hour(Time)
+    ) %>%
+    group_by(day, hour) %>%
+    summarise(accidents = n(), .groups = "drop") %>%
+    slice_max(accidents, n = 1)
+  
+  # ***********************************
+  output$peak_period <- renderValueBox({
+    
+    valueBox(
+      paste(peak_time$day, "-", peak_time$hour, "h"),
+      "Période la plus accidentogène",
+      icon = icon("exclamation-triangle"),
+      color = "red"
+    )
+    
+  })
+  
   output$plot_month <- renderPlotly({
     
     df_month <- df %>%
@@ -220,9 +312,20 @@ function(input, output, session) {
       group_by(month) %>%
       summarise(value = metric_fun()(cur_data()), .groups="drop")
     
-    gg<-ggplot(df_month, aes(month, value)) +
+    titre <- ifelse(
+      input$temporal_metric == "victims",
+      "Nombre de victimes par mois",
+      "Nombre d'accidents par mois"
+    )
+    
+    gg <- ggplot(df_month, aes(month, value)) +
       geom_col(fill="#dd4b39") +
-      theme_minimal() 
+      labs(
+        title = titre,
+        x = "Mois",
+        y = ""
+      ) +
+      theme_minimal()
     
     ggplotly(gg)
   })
@@ -237,13 +340,23 @@ function(input, output, session) {
       group_by(day) %>%
       summarise(value = metric_fun()(cur_data()), .groups="drop")
     
-    gg<-ggplot(df_day, aes(day, value)) +
+    titre <- ifelse(
+      input$temporal_metric == "victims",
+      "Nombre de victimes par jour de la semaine",
+      "Nombre d'accidents par jour de la semaine"
+    )
+    
+    gg <- ggplot(df_day, aes(day, value)) +
       geom_col(fill="#f39c12") +
-      theme_minimal() 
+      labs(
+        title = titre,
+        x = "Jour",
+        y = ""
+      ) +
+      theme_minimal()
     
     ggplotly(gg)
   })
-  
   
   ## Graphique montrant la distribution des accidents (ou des victimes)
   ## selon l'heure de la journée afin d'identifier les périodes horaires
@@ -255,8 +368,19 @@ function(input, output, session) {
       group_by(hour) %>%
       summarise(value = metric_fun()(cur_data()), .groups="drop")
     
-    gg<-ggplot(df_hour, aes(hour, value)) +
+    titre <- ifelse(
+      input$temporal_metric == "victims",
+      "Nombre de victimes par heure",
+      "Nombre d'accidents par heure"
+    )
+    
+    gg <- ggplot(df_hour, aes(hour, value)) +
       geom_col(fill="dodgerblue") +
+      labs(
+        title = titre,
+        x = "Heure",
+        y = ""
+      ) +
       theme_minimal()
     
     ggplotly(gg)
