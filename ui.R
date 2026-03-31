@@ -1,3 +1,17 @@
+#
+# This is the user-interface definition of a Shiny web application. You can
+# run the application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    https://shiny.posit.co/
+#
+
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(leaflet)
+library(shinydashboard)
 
 dashboardPage(
   
@@ -72,7 +86,7 @@ dashboardPage(
         fluidRow(
           # Infobox sur le nombre total d'accidents
           infoBox(
-            title = span("Au total", style = "text-transform: none;"),,
+            title = span("Au total", style = "text-transform: none;"),
             value = nrow(df),
             subtitle = "Accidents",
             icon = icon("car-crash"),
@@ -157,8 +171,19 @@ dashboardPage(
       
       
       # Page Gravité et facteurs influents
+      #tabItem(tabName = "influential_factors"),
       tabItem(
         tabName = "influential_factors",
+        #fluidRow(
+        #valueBoxOutput("most_accident_factor", width = 4)
+      #),
+        fluidRow(
+          
+          valueBoxOutput("danger_road", width = 4),
+          valueBoxOutput("danger_weather", width = 4),
+          valueBoxOutput("danger_zone", width = 4)
+          
+        ),
         
         fluidRow(
           
@@ -195,14 +220,14 @@ dashboardPage(
           )
         )
       ),
-
-      
+      # Page Analyse temporelle
       # Page Analyse temporelle
       tabItem(
         tabName = "temporal_analysis",
-        
         fluidRow(
-          
+          valueBoxOutput("peak_period", width = 4)
+        ),
+        fluidRow(
           box(
             width = 3,
             title = "Indicateur",
@@ -219,16 +244,32 @@ dashboardPage(
             )
           ),
           
-          box(width = 9, plotlyOutput("plot_month"))
-        ),
-        
-        fluidRow(
-          box(width = 6, plotlyOutput("plot_weekday")),
-          box(width = 6, plotlyOutput("plot_hour"))
+          box(
+            width = 9,
+            
+            tabsetPanel(
+              
+              tabPanel(
+                "Par mois",
+                plotlyOutput("plot_month")
+              ),
+              
+              tabPanel(
+                "Par jour",
+                plotlyOutput("plot_weekday")
+              ),
+              
+              tabPanel(
+                "Par heure",
+                plotlyOutput("plot_hour")
+              )
+              
+            )
+            
+          )
         )
       )
       
     )
   )
-  
 )
