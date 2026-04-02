@@ -171,12 +171,22 @@ dashboardPage(
       
       
       # Page Gravité et facteurs influents
-      #tabItem(tabName = "influential_factors"),
       tabItem(
         tabName = "influential_factors",
-        #fluidRow(
-        #valueBoxOutput("most_accident_factor", width = 4)
-      #),
+        # Titre de la page
+        div(
+          style = "display: flex; align-items: center;",
+          img(
+            src = "accident_illustration.png",
+            height = "80px",
+            style = "margin-right: 15px;"
+          ),
+          h2(
+            "Analyse de la gravité des accidents",
+            style = "margin: 0;"
+          )
+        ),
+        br(),
         fluidRow(
           
           valueBoxOutput("danger_road", width = 4),
@@ -221,9 +231,22 @@ dashboardPage(
         )
       ),
       # Page Analyse temporelle
-      # Page Analyse temporelle
       tabItem(
         tabName = "temporal_analysis",
+        # Titre de la page
+        div(
+          style = "display: flex; align-items: center;",
+          img(
+            src = "accident_illustration.png",
+            height = "80px",
+            style = "margin-right: 15px;"
+          ),
+          h2(
+            uiOutput("temporal_analysis_title"),
+            style = "margin: 0;"
+          )
+        ),
+        br(),
         fluidRow(
           valueBoxOutput("peak_period", width = 4)
         ),

@@ -12,7 +12,6 @@ library(leaflet)
 library(leaflet.extras)
 
 # Importation du fichier des données
-#df <- read_excel("Data/Road_Accident_Data.xlsx")
 df <- read_excel("Data/Road_Accident_Data.xlsx") %>%
   # Renommage de colonnes
   rename(Local_Authority_District = `Local_Authority_(District)`) %>%

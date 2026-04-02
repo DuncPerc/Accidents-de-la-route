@@ -177,8 +177,6 @@ function(input, output, session) {
   ## Le graphique affiche la proportion d'accidents légers, graves et mortels
   ## pour chaque catégorie du facteur sélectionné par l'utilisateur.
   
-  ##########  PAGE GRAVITÉ ET FACTEURS INFLUENTS ##########
-  
   output$plot_factor_gravity <- renderPlotly({
     
     # Facteurs les plus accidentogenes ******************************************************
@@ -267,7 +265,17 @@ function(input, output, session) {
     
     ggplotly(gg)
   })
+  
+  
   ##########  PAGE ANALYSE TEMPORELLE ##########
+  
+  ## Titre dynamique de la page
+  output$temporal_analysis_title <- renderUI({
+    title <- switch(input$temporal_metric,
+            "accidents" = "Distribution temporelle des accidents",
+            "victims" = "Distribution temporelle du nombre de victimes"
+    )
+  })
   
   ## Fonction réactive permettant de choisir la mesure analysée :
   ## soit le nombre d'accidents, soit le nombre total de victimes.
