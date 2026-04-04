@@ -35,18 +35,7 @@ dashboardPage(
     tabItems(
       # Page Accueil
       tabItem(tabName = "home",
-              div(
-                style = "display: flex; align-items: center;",
-                img(
-                  src = "accident_illustration.png",
-                  height = "80px",
-                  style = "margin-right: 15px;"
-                ),
-                h2(
-                  "Bienvenue dans le tableau de bord UKRA  !",
-                  style = "margin: 0;"
-                )
-              ),
+              header_block("Bienvenue dans le tableau de bord UKRA !"),
               br(),
               p("Ce tableau de bord présente une étude des accidents de la route au Royaume-Uni en 2021 et 2022. Il permet de visualiser l’évolution du nombre d’accidents, leur gravité ainsi que les principaux facteurs qui les influencent. L’objectif est de mieux comprendre les causes et les circonstances des accidents de la route afin d’aider à l’identification des situations à risque."),
               p("Ce tableau de bord propose trois pages principales :"),
@@ -66,20 +55,7 @@ dashboardPage(
       # Page Vue globale
       tabItem(
         tabName = "overview",
-        
-        # Titre de la page
-        div(
-          style = "display: flex; align-items: center;",
-          img(
-            src = "accident_illustration.png",
-            height = "80px",
-            style = "margin-right: 15px;"
-          ),
-          h2(
-            "Évolution du nombre d'accidents au Royaume-Uni entre 2021 et 2022",
-            style = "margin: 0;"
-          )
-        ),
+        header_block("Évolution du nombre d'accidents au Royaume-Uni entre 2021 et 2022"),
         br(),
         
         # InfoBox
@@ -173,19 +149,7 @@ dashboardPage(
       # Page Gravité et facteurs influents
       tabItem(
         tabName = "influential_factors",
-        # Titre de la page
-        div(
-          style = "display: flex; align-items: center;",
-          img(
-            src = "accident_illustration.png",
-            height = "80px",
-            style = "margin-right: 15px;"
-          ),
-          h2(
-            "Analyse de la gravité des accidents",
-            style = "margin: 0;"
-          )
-        ),
+        header_block("Analyse de la gravité des accidents"),
         br(),
         fluidRow(
           
@@ -213,14 +177,7 @@ dashboardPage(
             selectInput(
               "factor_choice",
               "Facteur étudié :",
-              choices = c(
-                "Type de route" = "Road_Type",
-                "Météo" = "Weather_Conditions",
-                "Éclairage" = "Light_Conditions",
-                "Etat chaussée" = "Road_Surface_Conditions",
-                "Zone" = "Urban_or_Rural_Area",
-                "Limitation vitesse" = "Speed_limit"
-              )
+              choices = factor_choices
             )
           ),
           
@@ -233,19 +190,7 @@ dashboardPage(
       # Page Analyse temporelle
       tabItem(
         tabName = "temporal_analysis",
-        # Titre de la page
-        div(
-          style = "display: flex; align-items: center;",
-          img(
-            src = "accident_illustration.png",
-            height = "80px",
-            style = "margin-right: 15px;"
-          ),
-          h2(
-            uiOutput("temporal_analysis_title"),
-            style = "margin: 0;"
-          )
-        ),
+        header_block(uiOutput("temporal_analysis_title")),
         br(),
         fluidRow(
           valueBoxOutput("peak_period", width = 4)

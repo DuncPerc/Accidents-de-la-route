@@ -54,6 +54,11 @@ function(input, output, session) {
           )
       )
     
+    df_plot$Severity_fr <- factor(
+      df_plot$Severity_fr,
+      levels = c("Légère", "Grave", "Mortelle", "Total")
+    )
+    
     gg <- ggplot(
       df_plot,
       aes(
@@ -174,7 +179,7 @@ function(input, output, session) {
   
   ## Graphique analysant la gravité des accidents selon différents facteurs
   ## (type de route, météo, éclairage, état de la chaussée, zone).
-  ## Le graphique affiche la proportion d'accidents légers, graves et mortels
+  ## Le graphique affiche le nombre d'accidents légers, graves et mortels
   ## pour chaque catégorie du facteur sélectionné par l'utilisateur.
   
   output$plot_factor_gravity <- renderPlotly({
@@ -200,13 +205,13 @@ function(input, output, session) {
       
       weather <- df %>%
         filter(Severity_fr %in% c("Grave","Mortelle")) %>%
-        group_by(Weather_Conditions) %>%
+        group_by(Weather_Conditions_reduc) %>%
         summarise(n = n(), .groups = "drop") %>%
-        filter(Weather_Conditions != "Unknown") %>%
+        filter(Weather_Conditions_reduc != "Unknown") %>%
         slice_max(n, n = 1)
       
       valueBox(
-        weather$Weather_Conditions,
+        weather$Weather_Conditions_reduc,
         "Météo la plus associée aux accidents graves",
         icon = icon("cloud-rain"),
         color = "purple"
@@ -243,27 +248,52 @@ function(input, output, session) {
     
     df_plot <- df_factor %>%
       group_by(!!var, Severity_fr) %>%
-      summarise(n = n(), .groups = "drop")
+      summarise(n = n(), .groups = "drop")%>%
+      group_by(!!var) %>%
+      mutate(
+        prop = n / sum(n)
+      ) %>%
+      ungroup()
     
+    df_plot$Severity_fr <- factor(
+      df_plot$Severity_fr,
+      levels = c("Mortelle","Grave","Légère")
+    )
+    
+    # Label du facteur traduit en français
+    label_factor = names(factor_choices)[factor_choices == input$factor_choice]
     # titre dynamique
-    titre <- paste("Gravité des accidents selon :", input$factor_choice)
+    titre <- paste("Gravité des accidents selon :", label_factor)
     
     gg <- ggplot(
       df_plot,
-      aes(x = !!var, y = n, fill = Severity_fr)
+      aes(x = reorder(!!var, n), y = n, fill = Severity_fr,
+          text = paste0(
+            label_factor," : ", !!var,
+            "<br>Gravité : ", Severity_fr,
+            "<br>Nombre d'accidents : ", n,
+            "<br>Part : ", scales::percent(prop, accuracy = 0.1)
+          )
+      )
     ) +
-      geom_col(position = "fill") +
-      scale_y_continuous(labels = scales::percent) +
+      geom_col() +
+      scale_fill_manual(
+        values = c(
+          "Légère" = "dodgerblue",
+          "Grave" = "#f39c12",
+          "Mortelle" = "#dd4b39"
+        )
+      ) +
       labs(
         title = titre,
         x = "",
-        y = "Proportion d'accidents",
+        y = "Nombre d'accidents",
         fill = "Gravité"
       ) +
       theme_minimal() +
       coord_flip()
     
-    ggplotly(gg)
+    ggplotly(gg, tooltip = "text")
   })
   
   
