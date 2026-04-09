@@ -196,15 +196,22 @@ dashboardPage(
           valueBoxOutput("peak_period", width = 4)
         ),
         fluidRow(
+          
           box(
             width = 3,
-            title = "Indicateur",
+            title = "Filtres",
             status = "danger",
             solidHeader = TRUE,
             
+            checkboxGroupInput(
+              "severity_selection",
+              "Gravité :",
+              choices = c("Légère","Grave","Mortelle"),
+              selected = c("Légère","Grave","Mortelle")
+            ),
             selectInput(
               "temporal_metric",
-              "Mesure :",
+              "Indicateur :",
               choices = c(
                 "Nombre d'accidents" = "accidents",
                 "Nombre de victimes" = "victims"

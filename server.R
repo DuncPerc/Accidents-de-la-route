@@ -307,6 +307,13 @@ function(input, output, session) {
     )
   })
   
+  ## Légende du tooltip correspondant à la valeur renseignée
+  tooltip_legend <- reactive({
+    switch(input$temporal_metric,
+                    "accidents" = "Nombre d'accidents",
+                    "victims" = "Nombre de victimes")
+  })
+  
   ## Fonction réactive permettant de choisir la mesure analysée :
   ## soit le nombre d'accidents, soit le nombre total de victimes.
   metric_fun <- reactive({
@@ -346,26 +353,41 @@ function(input, output, session) {
   output$plot_month <- renderPlotly({
     
     df_month <- df %>%
+      filter(Severity_fr %in% input$severity_selection) %>%
       mutate(month = month(Date, label=TRUE)) %>%
-      group_by(month) %>%
+      group_by(month, Severity_fr) %>%
       summarise(value = metric_fun()(cur_data()), .groups="drop")
     
-    titre <- ifelse(
-      input$temporal_metric == "victims",
-      "Nombre de victimes par mois",
-      "Nombre d'accidents par mois"
+    df_month$Severity_fr <- factor(
+      df_month$Severity_fr,
+      levels = c("Mortelle","Grave","Légère")
     )
     
-    gg <- ggplot(df_month, aes(month, value)) +
-      geom_col(fill="#dd4b39") +
+    gg <- ggplot(df_month, 
+          aes(x = month, y = value, fill = Severity_fr,
+              text = paste0(
+                "Mois : ", month,
+                "<br>Gravité : ", Severity_fr,
+                "<br>", tooltip_legend(), " : ", value
+              )
+    )) +
+      geom_col() +
+      scale_fill_manual(
+        values = c(
+          "Légère" = "dodgerblue",
+          "Grave" = "#f39c12",
+          "Mortelle" = "#dd4b39"
+        )
+      ) +
       labs(
-        title = titre,
+        title = paste0(tooltip_legend(), " par mois"),
         x = "Mois",
-        y = ""
+        y = "",
+        fill = "Gravité"
       ) +
       theme_minimal()
     
-    ggplotly(gg)
+    ggplotly(gg, tooltip = "text")
   })
   
   
@@ -374,26 +396,41 @@ function(input, output, session) {
   output$plot_weekday <- renderPlotly({
     
     df_day <- df %>%
+      filter(Severity_fr %in% input$severity_selection) %>%
       mutate(day = wday(Date, label=TRUE, week_start = 1)) %>%
-      group_by(day) %>%
+      group_by(day, Severity_fr) %>%
       summarise(value = metric_fun()(cur_data()), .groups="drop")
     
-    titre <- ifelse(
-      input$temporal_metric == "victims",
-      "Nombre de victimes par jour de la semaine",
-      "Nombre d'accidents par jour de la semaine"
+    df_day$Severity_fr <- factor(
+      df_day$Severity_fr,
+      levels = c("Mortelle","Grave","Légère")
     )
     
-    gg <- ggplot(df_day, aes(day, value)) +
-      geom_col(fill="#f39c12") +
+    gg <- ggplot(df_day, 
+         aes(x = day, y = value, fill = Severity_fr,
+             text = paste0(
+               "Jour : ", day,
+               "<br>Gravité : ", Severity_fr,
+               "<br>", tooltip_legend(), " : ", value
+             )
+      )) +
+      geom_col() +
+      scale_fill_manual(
+        values = c(
+          "Légère" = "dodgerblue",
+          "Grave" = "#f39c12",
+          "Mortelle" = "#dd4b39"
+        )
+      ) +
       labs(
-        title = titre,
+        title = paste0(tooltip_legend(), " par jour de la semaine"),
         x = "Jour",
-        y = ""
+        y = "",
+        fill = "Gravité"
       ) +
       theme_minimal()
     
-    ggplotly(gg)
+    ggplotly(gg, tooltip = "text")
   })
   
   ## Graphique montrant la distribution des accidents (ou des victimes)
@@ -402,25 +439,41 @@ function(input, output, session) {
   output$plot_hour <- renderPlotly({
     
     df_hour <- df %>%
+      filter(Severity_fr %in% input$severity_selection) %>%
       mutate(hour = hour(Time)) %>%
-      group_by(hour) %>%
+      group_by(hour, Severity_fr) %>%
       summarise(value = metric_fun()(cur_data()), .groups="drop")
     
-    titre <- ifelse(
-      input$temporal_metric == "victims",
-      "Nombre de victimes par heure",
-      "Nombre d'accidents par heure"
+    df_hour$Severity_fr <- factor(
+      df_hour$Severity_fr,
+      levels = c("Mortelle","Grave","Légère")
     )
     
-    gg <- ggplot(df_hour, aes(hour, value)) +
-      geom_col(fill="dodgerblue") +
+    
+    gg <- ggplot(df_hour, 
+         aes(x = hour, y = value, fill = Severity_fr,
+             text = paste0(
+               "Heure : ", hour,
+               "<br>Gravité : ", Severity_fr,
+               "<br>", tooltip_legend(), " : ", value
+             )
+      )) +
+      geom_col() +
+      scale_fill_manual(
+        values = c(
+          "Légère" = "dodgerblue",
+          "Grave" = "#f39c12",
+          "Mortelle" = "#dd4b39"
+        )
+      ) +
       labs(
-        title = titre,
+        title = paste0(tooltip_legend(), " par heure"),
         x = "Heure",
-        y = ""
+        y = "",
+        fill = "Gravité"
       ) +
       theme_minimal()
     
-    ggplotly(gg)
+    ggplotly(gg, tooltip = "text")
   })
 }  
